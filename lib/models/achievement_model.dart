@@ -1,0 +1,145 @@
+import 'package:flutter/material.dart';
+
+enum AchievementRequirement {
+  booksRead,
+  readingStreak,
+  readingDays,
+  comeback,
+  libraryBooks,
+  libraryFirst,
+  favoriteFirst,
+  completedBook,
+}
+
+class AchievementDefinition {
+  const AchievementDefinition({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.requirement,
+    this.threshold = 1,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final IconData icon;
+  final AchievementRequirement requirement;
+  final int threshold;
+}
+
+const achievementCatalog = [
+  AchievementDefinition(
+    id: 'first-read',
+    title: 'First Book',
+    description: 'Complete 1 book.',
+    icon: Icons.auto_stories,
+    requirement: AchievementRequirement.completedBook,
+    threshold: 1,
+  ),
+  AchievementDefinition(
+    id: 'books-3',
+    title: 'Book Starter',
+    description: 'Complete 3 books.',
+    icon: Icons.menu_book,
+    requirement: AchievementRequirement.booksRead,
+    threshold: 3,
+  ),
+  AchievementDefinition(
+    id: 'books-5',
+    title: 'Book Explorer',
+    description: 'Complete 5 books.',
+    icon: Icons.library_books,
+    requirement: AchievementRequirement.booksRead,
+    threshold: 5,
+  ),
+  AchievementDefinition(
+    id: 'books-10',
+    title: 'Book Master',
+    description: 'Complete 10 books.',
+    icon: Icons.collections_bookmark,
+    requirement: AchievementRequirement.booksRead,
+    threshold: 10,
+  ),
+  AchievementDefinition(
+    id: 'streak-3',
+    title: '3 Day Reader',
+    description: 'Read for 3 consecutive days.',
+    icon: Icons.local_fire_department,
+    requirement: AchievementRequirement.readingStreak,
+    threshold: 3,
+  ),
+  AchievementDefinition(
+    id: 'streak-7',
+    title: '7 Day Reader',
+    description: 'Read for 7 consecutive days.',
+    icon: Icons.whatshot,
+    requirement: AchievementRequirement.readingStreak,
+    threshold: 7,
+  ),
+  AchievementDefinition(
+    id: 'streak-14',
+    title: '14 Day Reader',
+    description: 'Read for 14 consecutive days.',
+    icon: Icons.bolt,
+    requirement: AchievementRequirement.readingStreak,
+    threshold: 14,
+  ),
+  AchievementDefinition(
+    id: 'streak-30',
+    title: '30 Day Reader',
+    description: 'Read for 30 consecutive days.',
+    icon: Icons.workspace_premium,
+    requirement: AchievementRequirement.readingStreak,
+    threshold: 30,
+  ),
+  AchievementDefinition(
+    id: 'days-7',
+    title: 'Weekly Reader',
+    description: 'Read on 7 different days.',
+    icon: Icons.calendar_month,
+    requirement: AchievementRequirement.readingDays,
+    threshold: 7,
+  ),
+  AchievementDefinition(
+    id: 'days-15',
+    title: 'Consistent Reader',
+    description: 'Read on 15 different days.',
+    icon: Icons.event_available,
+    requirement: AchievementRequirement.readingDays,
+    threshold: 15,
+  ),
+  AchievementDefinition(
+    id: 'days-30',
+    title: 'Dedicated Reader',
+    description: 'Read on 30 different days.',
+    icon: Icons.card_membership,
+    requirement: AchievementRequirement.readingDays,
+    threshold: 30,
+  ),
+  AchievementDefinition(
+    id: 'book-collector',
+    title: 'Book Collector',
+    description: 'Add 10 books to your library.',
+    icon: Icons.bookmark,
+    requirement: AchievementRequirement.libraryBooks,
+    threshold: 10,
+  ),
+  AchievementDefinition(
+    id: 'library-first',
+    title: 'First Library Book',
+    description: 'Add your first book to the library.',
+    icon: Icons.bookmark_add,
+    requirement: AchievementRequirement.libraryFirst,
+    threshold: 1,
+  ),
+  AchievementDefinition(
+    id: 'favorite-first',
+    title: 'First Favorite',
+    description: 'Save your first favorite book.',
+    icon: Icons.favorite,
+    requirement: AchievementRequirement.favoriteFirst,
+    threshold: 1,
+  ),
+];
