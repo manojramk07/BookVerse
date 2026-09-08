@@ -155,8 +155,12 @@ class SettingsPage extends StatelessWidget {
         content: RadioGroup<ThemeMode>(
           groupValue: state.themeMode,
           onChanged: (mode) {
-            if (mode != null) state.setThemeMode(mode);
-            Navigator.pop(context);
+            if (mode != null && mode != state.themeMode) {
+              Navigator.pop(context);
+              state.setThemeMode(mode);
+            } else {
+              Navigator.pop(context);
+            }
           },
           child: const Column(
             mainAxisSize: MainAxisSize.min,

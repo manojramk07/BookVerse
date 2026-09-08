@@ -19,7 +19,8 @@ class AppState extends ChangeNotifier {
   double fontSize = 18;
   int annualReadingGoal = 12;
 
-  // Local user profile info
+  // Local user profile info (permanent userId and editable details)
+  String userId = 'BV-1001';
   String userName = 'Guest';
   String userEmail = '';
   String userBio = 'Exploring worlds one page at a time';
@@ -45,10 +46,18 @@ class AppState extends ChangeNotifier {
     state.fontSize = prefs.getDouble('fontSize') ?? 18;
     state.annualReadingGoal = prefs.getInt('annualGoal') ?? 12;
 
-    // Load local user profile (Default to Guest with random 4-digit number)
+    // Load permanent User ID (Created ONCE, never changed or regenerated on refresh)
+    var storedUserId = prefs.getString('userId');
+    if (storedUserId == null || storedUserId.isEmpty) {
+      storedUserId = 'BV-${1000 + Random().nextInt(9000)}';
+      prefs.setString('userId', storedUserId);
+    }
+    state.userId = storedUserId;
+
+    // Load local user profile (Preserved permanently across app restarts)
     var storedName = prefs.getString('userName');
     if (storedName == null || storedName.isEmpty || storedName == 'Reader') {
-      storedName = 'Guest_${1000 + Random().nextInt(9000)}';
+      storedName = 'Guest_${storedUserId.replaceAll('BV-', '')}';
       prefs.setString('userName', storedName);
     }
     state.userName = storedName;
@@ -319,26 +328,48 @@ class AppState extends ChangeNotifier {
 
   // ================= LOCAL PROFILE MANAGEMENT =================
 
-  /// Updates the user's name, email, and bio locally
-  void updateProfile({
+  /// Updates the user's profile details and persists them permanently in local storage
+  Future<void> updateProfile({
     required String name,
     String? email,
     String? bio,
-  }) {
+    String? customUserId,
+  }) async {
     final cleanName = name.trim();
-    userName = cleanName.isNotEmpty ? cleanName : 'Guest_${1000 + Random().nextInt(9000)}';
-    userEmail = (email ?? '').trim();
-    userBio = (bio ?? '').trim().isNotEmpty ? bio!.trim() : 'Exploring worlds one page at a time';
+    if (cleanName.isNotEmpty) {
+      userName = cleanName;
+      await _preferences.setString('userName', userName);
+    }
 
-    _preferences.setString('userName', userName);
-    _preferences.setString('userEmail', userEmail);
-    _preferences.setString('userBio', userBio);
+    userEmail = (email ?? '').trim();
+    await _preferences.setString('userEmail', userEmail);
+
+    final cleanBio = (bio ?? '').trim();
+    userBio = cleanBio.isNotEmpty ? cleanBio : 'Exploring worlds one page at a time';
+    await _preferences.setString('userBio', userBio);
+
+    if (customUserId != null) {
+      final cleanId = customUserId.trim();
+      if (cleanId.isNotEmpty) {
+        userId = cleanId;
+        await _preferences.setString('userId', userId);
+      }
+    }
+
     notifyListeners();
   }
 
-  /// Resets user profile back to random Guest and default bio
+  /// Refreshes in-memory stats, achievements, and streaks safely
+  /// WITHOUT generating a new user ID or modifying the user's profile.
+  void refreshData() {
+    _refreshAchievementUnlocks();
+    notifyListeners();
+  }
+
+  /// Resets user profile back to default guest identity for testing/recovery
+  /// while preserving the permanent userId so it never changes unexpectedly.
   void resetProfileToDefault() {
-    userName = 'Guest_${1000 + Random().nextInt(9000)}';
+    userName = 'Guest_${userId.replaceAll('BV-', '')}';
     userEmail = '';
     userBio = 'Exploring worlds one page at a time';
 
@@ -375,6 +406,7 @@ class AppState extends ChangeNotifier {
   // ================= SETTINGS =================
 
   void setThemeMode(ThemeMode mode) {
+    if (themeMode == mode) return;
     themeMode = mode;
     _preferences.setString('themeMode', mode.name);
     notifyListeners();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'services/app_state.dart';
 import 'screens/main_screen.dart';
+import 'services/app_state.dart';
 
 class BookVerseApp extends StatefulWidget {
   const BookVerseApp({super.key});
@@ -13,35 +13,68 @@ class BookVerseApp extends StatefulWidget {
 class _BookVerseAppState extends State<BookVerseApp> {
   late final Future<AppState> _state = AppState.load();
 
+  // Cached ThemeDatas to prevent recomputing ColorScheme.fromSeed on every rebuild/theme switch
+  static final ThemeData _lightTheme = _createTheme(Brightness.light);
+  static final ThemeData _darkTheme = _createTheme(Brightness.dark);
+
+  static ThemeData _createTheme(Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF673AB7),
+      brightness: brightness,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor:
+          isLight ? const Color(0xFFF8F7FC) : const Color(0xFF131218),
+      fontFamily: 'Roboto',
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: IconThemeData(
+          color: isLight ? const Color(0xFF1E1B26) : const Color(0xFFEDEAF4),
+        ),
+        titleTextStyle: TextStyle(
+          color: isLight ? const Color(0xFF1E1B26) : const Color(0xFFEDEAF4),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<AppState>(
       future: _state,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const MaterialApp(home: Scaffold(body: Center(child: CircularProgressIndicator())));
+          return const MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(body: Center(child: CircularProgressIndicator())),
+          );
         }
         final appState = snapshot.data!;
         return AppStateScope(
           notifier: appState,
-          child: AnimatedBuilder(
-            animation: appState,
-            builder: (context, _) => MaterialApp(
+          child: ListenableBuilder(
+            listenable: appState,
+            builder: (context, child) => MaterialApp(
               debugShowCheckedModeBanner: false,
               title: 'BookVerse',
               themeMode: appState.themeMode,
-              theme: _theme(Brightness.light),
-              darkTheme: _theme(Brightness.dark),
-              home: const MainScreen(),
+              theme: _lightTheme,
+              darkTheme: _darkTheme,
+              themeAnimationDuration: const Duration(milliseconds: 120),
+              themeAnimationCurve: Curves.easeOutCubic,
+              home: child,
             ),
+            child: const MainScreen(),
           ),
         );
       },
     );
-  }
-
-  ThemeData _theme(Brightness brightness) {
-    final scheme = ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: brightness);
-    return ThemeData(useMaterial3: true, colorScheme: scheme, scaffoldBackgroundColor: brightness == Brightness.light ? const Color(0xFFF8F7FC) : const Color(0xFF15131A), fontFamily: 'Roboto');
   }
 }

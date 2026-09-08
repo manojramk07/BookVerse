@@ -111,5 +111,44 @@ void main() {
       expect(state.isBookInLibrary('book_fav_1'), isFalse);
       expect(state.libraryBooks, isEmpty);
     });
+
+    test('Permanent User ID is retained and not regenerated on reload or refresh', () async {
+      final state1 = await AppState.load();
+      final initialId = state1.userId;
+      expect(initialId, isNotEmpty);
+      expect(initialId, startsWith('BV-'));
+
+      // Safe refreshData does not change user ID
+      state1.refreshData();
+      expect(state1.userId, equals(initialId));
+
+      // Reloading app preserves the exact same permanent user ID
+      final state2 = await AppState.load();
+      expect(state2.userId, equals(initialId));
+    });
+
+    test('Edited profile details are replaced and saved permanently across reload', () async {
+      final state = await AppState.load();
+      await state.updateProfile(
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        bio: 'Reading classic gothic novels',
+        customUserId: 'BV-7777',
+      );
+
+      expect(state.userName, equals('Jane Doe'));
+      expect(state.userId, equals('BV-7777'));
+      expect(state.userEmail, equals('jane@example.com'));
+      expect(state.userBio, equals('Reading classic gothic novels'));
+      expect(state.userInitial, equals('J'));
+
+      // Reload from SharedPreferences and ensure all edits are permanent
+      final reloadedState = await AppState.load();
+      expect(reloadedState.userName, equals('Jane Doe'));
+      expect(reloadedState.userId, equals('BV-7777'));
+      expect(reloadedState.userEmail, equals('jane@example.com'));
+      expect(reloadedState.userBio, equals('Reading classic gothic novels'));
+      expect(reloadedState.userInitial, equals('J'));
+    });
   });
 }
