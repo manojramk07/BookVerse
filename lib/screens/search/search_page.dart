@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../models/book_model.dart';
-import '../../services/google_books_service.dart';
+import '../../services/local_book_service.dart';
 import '../book_details_page.dart';
 
 class SearchPage extends StatefulWidget {
@@ -14,7 +14,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final GoogleBooksService _booksService = GoogleBooksService();
+  final LocalBookService _localBookService = LocalBookService();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -22,14 +22,13 @@ class _SearchPageState extends State<SearchPage> {
   String currentQuery = '';
   bool isLoading = false;
   bool isLoadingMore = false;
-  bool hasMore = true;
+  bool hasMore = false;
   String? errorMessage;
   Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -38,16 +37,6 @@ class _SearchPageState extends State<SearchPage> {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
-        !isLoading &&
-        !isLoadingMore &&
-        hasMore &&
-        currentQuery.isNotEmpty) {
-      _loadMore();
-    }
   }
 
   void _onTextChanged(String value) {
@@ -63,60 +52,22 @@ class _SearchPageState extends State<SearchPage> {
       return;
     }
 
-    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
       _performSearch(query);
     });
   }
 
-  Future<void> _performSearch(String query) async {
+  void _performSearch(String query) {
     if (query.isEmpty) return;
 
+    final results = _localBookService.searchBooks(query);
     setState(() {
       currentQuery = query;
-      isLoading = true;
+      searchResults = results;
+      isLoading = false;
       errorMessage = null;
-      hasMore = true;
+      hasMore = false;
     });
-
-    try {
-      final results = await _booksService.searchBooks(query, startIndex: 0, maxResults: 20);
-      if (!mounted) return;
-      setState(() {
-        searchResults = results;
-        isLoading = false;
-        hasMore = results.length >= 20;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        searchResults = [];
-        isLoading = false;
-        errorMessage = error.toString().replaceFirst('Exception: ', '');
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (isLoadingMore || !hasMore || currentQuery.isEmpty) return;
-
-    setState(() => isLoadingMore = true);
-
-    try {
-      final moreBooks = await _booksService.searchBooks(
-        currentQuery,
-        startIndex: searchResults.length,
-        maxResults: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        searchResults.addAll(moreBooks);
-        isLoadingMore = false;
-        hasMore = moreBooks.length >= 20;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => isLoadingMore = false);
-    }
   }
 
   void _clearSearch() {

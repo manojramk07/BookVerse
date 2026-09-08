@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/achievement_model.dart';
 import '../models/book_model.dart';
+import 'local_book_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState(this._preferences);
@@ -67,7 +68,13 @@ class AppState extends ChangeNotifier {
       if (jsonStr != null) {
         try {
           final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-          final book = Book.fromJson(map);
+          var book = Book.fromJson(map);
+          if (book.assetPath == null) {
+            final local = LocalBookService().getBookById(book.id);
+            if (local?.assetPath != null) {
+              book = book.copyWith(assetPath: local!.assetPath);
+            }
+          }
           state._savedBooks[id] = book;
           state.progressByBook[id] = book.progress;
           state.positionByBook[id] = book.readingPosition;

@@ -31,6 +31,7 @@ void main() {
         language: 'en',
         hasGutenbergContent: true,
         gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/1342/pg1342.txt',
+        assetPath: 'assets/books/pride_and_prejudice.txt',
       );
 
       final json = original.toJson();
@@ -42,6 +43,7 @@ void main() {
       expect(deserialized.gutenbergId, equals(original.gutenbergId));
       expect(deserialized.progress, equals(original.progress));
       expect(deserialized.readingPosition, equals(original.readingPosition));
+      expect(deserialized.assetPath, equals('assets/books/pride_and_prejudice.txt'));
       expect(deserialized.isFavorite, isTrue);
       expect(deserialized.isSaved, isTrue);
       expect(deserialized.hasGutenbergContent, isTrue);

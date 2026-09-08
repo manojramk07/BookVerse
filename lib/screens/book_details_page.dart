@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/book_model.dart';
 import '../services/app_state.dart';
 import '../services/gutenberg_service.dart';
+import '../services/local_book_service.dart';
 import 'reading_page.dart';
 
 class BookDetailsPage extends StatefulWidget {
@@ -24,7 +25,22 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   void initState() {
     super.initState();
     currentBook = widget.book;
-    _checkGutenbergAvailability();
+
+    final localBook = LocalBookService().getBookById(currentBook.id);
+    if (localBook != null) {
+      currentBook = currentBook.copyWith(
+        assetPath: currentBook.assetPath ?? localBook.assetPath,
+        hasGutenbergContent: true,
+        gutenbergId: currentBook.gutenbergId ?? localBook.gutenbergId,
+        gutenbergTextUrl: currentBook.gutenbergTextUrl ?? localBook.gutenbergTextUrl,
+        chapterTitle: currentBook.chapterTitle.isNotEmpty ? currentBook.chapterTitle : localBook.chapterTitle,
+      );
+      isCheckingGutenberg = false;
+    } else if (currentBook.assetPath != null && currentBook.assetPath!.isNotEmpty) {
+      isCheckingGutenberg = false;
+    } else {
+      _checkGutenbergAvailability();
+    }
   }
 
   Future<void> _checkGutenbergAvailability() async {
@@ -55,7 +71,10 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   }
 
   void _onReadTapped(BuildContext context) {
-    if (currentBook.hasGutenbergContent && currentBook.gutenbergTextUrl != null) {
+    final canRead = (currentBook.assetPath != null && currentBook.assetPath!.isNotEmpty) ||
+        (currentBook.hasGutenbergContent && currentBook.gutenbergTextUrl != null);
+
+    if (canRead) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -69,7 +88,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
           title: const Text('Full Text Unavailable'),
           content: const Text(
             'Full text is not available for this book.\n\n'
-            'Only public-domain books catalogued on Project Gutenberg can be read inside the app.',
+            'Only public-domain books catalogued on Project Gutenberg or local classics can be read inside the app.',
           ),
           actions: [
             TextButton(
@@ -239,20 +258,20 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
               ),
               const SizedBox(height: 14),
 
-              // Gutenberg Availability Status Pill
+              // Gutenberg / Local Availability Status Pill
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isCheckingGutenberg
                       ? Colors.grey.shade100
-                      : currentBook.hasGutenbergContent
+                      : (currentBook.assetPath != null || currentBook.hasGutenbergContent)
                           ? Colors.green.shade50
                           : Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isCheckingGutenberg
                         ? Colors.grey.shade300
-                        : currentBook.hasGutenbergContent
+                        : (currentBook.assetPath != null || currentBook.hasGutenbergContent)
                             ? Colors.green.shade200
                             : Colors.orange.shade200,
                   ),
@@ -267,11 +286,11 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                       )
                     else
                       Icon(
-                        currentBook.hasGutenbergContent
+                        (currentBook.assetPath != null || currentBook.hasGutenbergContent)
                             ? Icons.check_circle_outline
                             : Icons.info_outline,
                         size: 18,
-                        color: currentBook.hasGutenbergContent
+                        color: (currentBook.assetPath != null || currentBook.hasGutenbergContent)
                             ? Colors.green.shade700
                             : Colors.orange.shade800,
                       ),
@@ -280,15 +299,17 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                       child: Text(
                         isCheckingGutenberg
                             ? 'Checking Project Gutenberg reader availability...'
-                            : currentBook.hasGutenbergContent
-                                ? 'Full text available via Project Gutenberg'
-                                : 'Full text not available (metadata only)',
+                            : currentBook.assetPath != null
+                                ? 'Full classic text available offline'
+                                : currentBook.hasGutenbergContent
+                                    ? 'Full text available via Project Gutenberg'
+                                    : 'Full text not available (metadata only)',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: isCheckingGutenberg
                               ? Colors.grey.shade700
-                              : currentBook.hasGutenbergContent
+                              : (currentBook.assetPath != null || currentBook.hasGutenbergContent)
                                   ? Colors.green.shade800
                                   : Colors.orange.shade900,
                         ),

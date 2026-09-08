@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/book_model.dart';
 import '../../services/app_state.dart';
-import '../../services/google_books_service.dart';
+import '../../services/local_book_service.dart';
 import '../../widgets/book_card.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/popular_book_card.dart';
@@ -23,7 +23,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final GoogleBooksService _booksService = GoogleBooksService();
+  final LocalBookService _localBookService = LocalBookService();
 
   bool isLoadingFeatured = true;
   bool isLoadingCategory = false;
@@ -58,8 +58,8 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final featured = await _booksService.getFeaturedBooks(maxResults: 10);
-      final catBooks = await _booksService.getBooksByCategory(selectedCategory, maxResults: 10);
+      final featured = _localBookService.getFeaturedBooks(maxResults: 10);
+      final catBooks = _localBookService.getBooksByCategory(selectedCategory, maxResults: 10);
 
       if (!mounted) return;
       setState(() {
@@ -71,34 +71,20 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       setState(() {
         isLoadingFeatured = false;
-        featuredError = e.toString().replaceFirst('Exception: ', '');
+        featuredError = e.toString();
       });
     }
   }
 
-  Future<void> _onSelectCategory(String category) async {
+  void _onSelectCategory(String category) {
     if (selectedCategory == category && categoryBooks.isNotEmpty) return;
 
     setState(() {
       selectedCategory = category;
-      isLoadingCategory = true;
+      categoryBooks = _localBookService.getBooksByCategory(category, maxResults: 10);
+      isLoadingCategory = false;
       categoryError = null;
     });
-
-    try {
-      final books = await _booksService.getBooksByCategory(category, maxResults: 10);
-      if (!mounted) return;
-      setState(() {
-        categoryBooks = books;
-        isLoadingCategory = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        isLoadingCategory = false;
-        categoryError = e.toString().replaceFirst('Exception: ', '');
-      });
-    }
   }
 
   @override

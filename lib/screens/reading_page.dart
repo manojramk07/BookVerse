@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/book_model.dart';
 import '../services/app_state.dart';
 import '../services/gutenberg_service.dart';
+import '../services/local_book_service.dart';
 
 class ReadingPage extends StatefulWidget {
   final Book book;
@@ -17,6 +18,7 @@ class ReadingPage extends StatefulWidget {
 
 class _ReadingPageState extends State<ReadingPage> {
   final GutenbergService _gutenbergService = GutenbergService();
+  final LocalBookService _localBookService = LocalBookService();
   late final ScrollController _scrollController;
 
   bool isLoading = true;
@@ -48,7 +50,28 @@ class _ReadingPageState extends State<ReadingPage> {
     readingProgress = appState.progressFor(book);
     isBookmarked = appState.isBookFavorite(book.id);
 
-    // 1. If text is already embedded in the book model
+    // 1. Check local assets (offline-first)
+    final localBook = _localBookService.getBookById(book.id);
+    final effectiveAssetPath = book.assetPath ?? localBook?.assetPath;
+    if (effectiveAssetPath != null && effectiveAssetPath.isNotEmpty) {
+      try {
+        final targetBook = book.assetPath != null ? book : book.copyWith(assetPath: effectiveAssetPath);
+        final text = await _localBookService.loadBookContent(targetBook);
+        if (text.isNotEmpty) {
+          if (!mounted) return;
+          setState(() {
+            textContent = text;
+            isLoading = false;
+          });
+          _restoreScrollPosition();
+          return;
+        }
+      } catch (e) {
+        debugPrint('[ReadingPage] Error loading local asset: $e');
+      }
+    }
+
+    // 2. If text is already embedded in the book model
     if (book.readingText.isNotEmpty && book.readingText.length > 500) {
       setState(() {
         textContent = book.readingText;
@@ -58,7 +81,7 @@ class _ReadingPageState extends State<ReadingPage> {
       return;
     }
 
-    // 2. Fetch from Project Gutenberg
+    // 3. Fallback to Project Gutenberg network fetch
     try {
       int? gutenbergId = book.gutenbergId;
       String? textUrl = book.gutenbergTextUrl;
@@ -191,7 +214,7 @@ class _ReadingPageState extends State<ReadingPage> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      'Loading book content from Project Gutenberg...',
+                      'Loading book content...',
                       style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
                     ),
                   ],
