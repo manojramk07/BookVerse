@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/achievement_model.dart';
 import '../models/book_model.dart';
-import 'firebase_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState(this._preferences);
@@ -18,13 +18,12 @@ class AppState extends ChangeNotifier {
   double fontSize = 18;
   int annualReadingGoal = 12;
 
-  // Real user session info
-  String? userId;
-  String userName = 'Reader';
+  // Local user profile info
+  String userName = 'Guest';
   String userEmail = '';
-  bool isAuthenticated = false;
+  String userBio = 'Exploring worlds one page at a time';
 
-  // Real user book collections (stored as full Book JSON objects)
+  // Real user book collections (stored locally as full Book JSON objects)
   final Map<String, Book> _savedBooks = {};
   final Set<String> libraryBookIds = {};
   final Set<String> favoriteBookIds = {};
@@ -45,20 +44,15 @@ class AppState extends ChangeNotifier {
     state.fontSize = prefs.getDouble('fontSize') ?? 18;
     state.annualReadingGoal = prefs.getInt('annualGoal') ?? 12;
 
-    // Load user session
-    state.userId = prefs.getString('userId');
-    state.userName = prefs.getString('userName') ?? 'Reader';
-    state.userEmail = prefs.getString('userEmail') ?? '';
-    state.isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
-
-    // Check if Firebase has a live user session
-    final fbUser = FirebaseService.instance.currentUser;
-    if (fbUser != null) {
-      state.userId = fbUser.uid;
-      state.userName = fbUser.displayName ?? fbUser.email?.split('@').first ?? 'Reader';
-      state.userEmail = fbUser.email ?? '';
-      state.isAuthenticated = true;
+    // Load local user profile (Default to Guest with random 4-digit number)
+    var storedName = prefs.getString('userName');
+    if (storedName == null || storedName.isEmpty || storedName == 'Reader') {
+      storedName = 'Guest_${1000 + Random().nextInt(9000)}';
+      prefs.setString('userName', storedName);
     }
+    state.userName = storedName;
+    state.userEmail = prefs.getString('userEmail') ?? '';
+    state.userBio = prefs.getString('userBio') ?? 'Exploring worlds one page at a time';
 
     // Load IDs
     state.libraryBookIds.addAll(prefs.getStringList('libraryBooks') ?? []);
@@ -101,6 +95,13 @@ class AppState extends ChangeNotifier {
   }
 
   // ================= GETTERS =================
+
+  /// First initial of user's name for avatar display
+  String get userInitial {
+    final clean = userName.trim();
+    if (clean.isEmpty) return 'G';
+    return clean[0].toUpperCase();
+  }
 
   /// All books explicitly in the user's library
   List<Book> get libraryBooks {
@@ -184,15 +185,9 @@ class AppState extends ChangeNotifier {
     if (isSaved) {
       libraryBookIds.remove(book.id);
       _savedBooks[book.id] = updatedBook;
-      if (userId != null) {
-        FirebaseService.instance.removeBookFromLibrary(userId!, book.id);
-      }
     } else {
       libraryBookIds.add(book.id);
       _savedBooks[book.id] = updatedBook;
-      if (userId != null) {
-        FirebaseService.instance.syncBookToLibrary(userId!, updatedBook);
-      }
     }
 
     _persistBook(updatedBook);
@@ -215,9 +210,6 @@ class AppState extends ChangeNotifier {
 
     _persistBook(updatedBook);
     _saveStringSet('favoriteBooks', favoriteBookIds);
-    if (userId != null) {
-      FirebaseService.instance.syncBookToLibrary(userId!, updatedBook);
-    }
     _refreshAchievementUnlocks();
     notifyListeners();
   }
@@ -255,17 +247,6 @@ class AppState extends ChangeNotifier {
     _savedBooks[book.id] = updatedBook;
     _persistBook(updatedBook);
 
-    if (userId != null) {
-      FirebaseService.instance.syncReadingProgress(
-        userId: userId!,
-        bookId: book.id,
-        progress: clampedProgress,
-        readingPosition: position,
-        isCompleted: completed,
-      );
-      FirebaseService.instance.syncReadingActivity(userId!, todayKey);
-    }
-
     _refreshAchievementUnlocks();
     notifyListeners();
   }
@@ -275,6 +256,10 @@ class AppState extends ChangeNotifier {
   bool isAchievementUnlocked(String id) {
     final achievement = achievementCatalog.where((item) => item.id == id).firstOrNull;
     return achievement != null && achievementProgress(achievement) >= achievement.threshold;
+  }
+
+  int get unlockedAchievementsCount {
+    return achievementCatalog.where((item) => isAchievementUnlocked(item.id)).length;
   }
 
   int achievementProgress(AchievementDefinition achievement) {
@@ -325,37 +310,58 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // ================= USER SESSION =================
+  // ================= LOCAL PROFILE MANAGEMENT =================
 
-  void setUserSession({
-    required String id,
+  /// Updates the user's name, email, and bio locally
+  void updateProfile({
     required String name,
-    required String email,
+    String? email,
+    String? bio,
   }) {
-    userId = id;
-    userName = name;
-    userEmail = email;
-    isAuthenticated = true;
+    final cleanName = name.trim();
+    userName = cleanName.isNotEmpty ? cleanName : 'Guest_${1000 + Random().nextInt(9000)}';
+    userEmail = (email ?? '').trim();
+    userBio = (bio ?? '').trim().isNotEmpty ? bio!.trim() : 'Exploring worlds one page at a time';
 
-    _preferences.setString('userId', id);
-    _preferences.setString('userName', name);
-    _preferences.setString('userEmail', email);
-    _preferences.setBool('isAuthenticated', true);
+    _preferences.setString('userName', userName);
+    _preferences.setString('userEmail', userEmail);
+    _preferences.setString('userBio', userBio);
     notifyListeners();
   }
 
-  Future<void> logout() async {
-    userId = null;
-    userName = 'Reader';
+  /// Resets user profile back to random Guest and default bio
+  void resetProfileToDefault() {
+    userName = 'Guest_${1000 + Random().nextInt(9000)}';
     userEmail = '';
-    isAuthenticated = false;
+    userBio = 'Exploring worlds one page at a time';
 
-    await _preferences.remove('userId');
-    await _preferences.remove('userName');
-    await _preferences.remove('userEmail');
-    await _preferences.setBool('isAuthenticated', false);
+    _preferences.setString('userName', userName);
+    _preferences.remove('userEmail');
+    _preferences.remove('userBio');
+    notifyListeners();
+  }
 
-    await FirebaseService.instance.signOut();
+  /// Clears all reading history, progress, saved books, and streak data
+  Future<void> clearAllReadingData() async {
+    _savedBooks.clear();
+    libraryBookIds.clear();
+    favoriteBookIds.clear();
+    completedBookIds.clear();
+    progressByBook.clear();
+    positionByBook.clear();
+    readingDays.clear();
+    achievementUnlockedDates.clear();
+
+    await _preferences.remove('libraryBooks');
+    await _preferences.remove('favoriteBooks');
+    await _preferences.remove('completedBooks');
+    await _preferences.remove('readingDays');
+    await _preferences.remove('achievementUnlockedDates');
+    final savedKeys = _preferences.getStringList('savedBookIndex') ?? [];
+    for (final id in savedKeys) {
+      await _preferences.remove('saved_book_$id');
+    }
+    await _preferences.remove('savedBookIndex');
     notifyListeners();
   }
 
@@ -364,18 +370,12 @@ class AppState extends ChangeNotifier {
   void setThemeMode(ThemeMode mode) {
     themeMode = mode;
     _preferences.setString('themeMode', mode.name);
-    if (userId != null) {
-      FirebaseService.instance.syncSettings(userId!, {'themeMode': mode.name});
-    }
     notifyListeners();
   }
 
   void setNotifications(bool value) {
     notificationsEnabled = value;
     _preferences.setBool('notifications', value);
-    if (userId != null) {
-      FirebaseService.instance.syncSettings(userId!, {'notifications': value});
-    }
     notifyListeners();
   }
 

@@ -1,10 +1,40 @@
 import 'package:flutter/material.dart';
 
 import '../../services/app_state.dart';
-import '../auth/auth_screen.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
+  void _confirmClearData(BuildContext context, AppState state) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear Reading History?'),
+        content: const Text(
+          'This will permanently reset all your saved books, bookmarks, and reading progress stored on this device. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await state.clearAllReadingData();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Reading history cleared.')),
+                );
+              }
+            },
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,38 +91,18 @@ class SettingsPage extends StatelessWidget {
             onChanged: state.setNotifications,
           ),
           const Divider(),
-          _heading('Account'),
-          if (state.isAuthenticated) ...[
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: Text(state.userName),
-              subtitle: Text(state.userEmail),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
-              onTap: () async {
-                await state.logout();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signed out.')),
-                  );
-                }
-              },
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: const Text('Sign In or Register'),
-              subtitle: const Text('Connect with Firebase to sync your reading across devices'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthScreen()),
-              ),
-            ),
-          ],
+          _heading('Storage & Privacy'),
+          const ListTile(
+            leading: Icon(Icons.lock_outline, color: Colors.green),
+            title: Text('100% Local & Private'),
+            subtitle: Text('Your reading activity and library are stored exclusively on this device.'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: Colors.red),
+            title: const Text('Clear Reading History', style: TextStyle(color: Colors.red)),
+            subtitle: const Text('Reset all reading progress, streaks, and saved books'),
+            onTap: () => _confirmClearData(context, state),
+          ),
           const Divider(),
           _heading('About'),
           ListTile(
@@ -111,7 +121,7 @@ class SettingsPage extends StatelessWidget {
             onTap: () => _showInfo(
               context,
               'Privacy',
-              'Your reading progress, streaks, and library collections are stored securely on your device and synchronized to your private Firestore account when signed in.',
+              'BookVerse does not track you or sell your reading habits. All progress and preferences are saved locally on your device.',
             ),
           ),
         ],
