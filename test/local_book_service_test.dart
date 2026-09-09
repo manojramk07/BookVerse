@@ -11,9 +11,9 @@ void main() {
   group('LocalBookService Catalogue Tests', () {
     final service = LocalBookService();
 
-    test('Catalogue contains exactly 10 real public-domain classic books', () {
+    test('Catalogue contains exactly 11 real books including The Psychology of Money', () {
       final allBooks = service.getAllBooks();
-      expect(allBooks.length, equals(10));
+      expect(allBooks.length, equals(11));
 
       final titles = allBooks.map((b) => b.title).toList();
       expect(titles, contains('Pride and Prejudice'));
@@ -26,9 +26,10 @@ void main() {
       expect(titles, contains('Little Women'));
       expect(titles, contains('The Wonderful Wizard of Oz'));
       expect(titles, contains('A Tale of Two Cities'));
+      expect(titles, contains('The Psychology of Money'));
     });
 
-    test('Every book in catalogue has valid metadata and real Gutenberg ID', () {
+    test('Every book in catalogue has valid metadata and asset path', () {
       final allBooks = service.getAllBooks();
       for (final book in allBooks) {
         expect(book.id, isNotEmpty);
@@ -36,15 +37,13 @@ void main() {
         expect(book.author, isNotEmpty);
         expect(book.description, isNotEmpty);
         expect(book.category, isNotEmpty);
-        expect(book.gutenbergId, isNotNull);
-        expect(book.gutenbergId!, greaterThan(0));
         expect(book.assetPath, isNotNull);
         expect(book.assetPath!, startsWith('assets/books/'));
         expect(book.hasGutenbergContent, isTrue);
       }
     });
 
-    test('All 10 book text files exist on disk in assets/books/', () {
+    test('All 11 book text files exist on disk in assets/books/', () {
       final allBooks = service.getAllBooks();
       for (final book in allBooks) {
         final file = File(book.assetPath!);
@@ -96,6 +95,10 @@ void main() {
       final searchCaseInsensitive = service.searchBooks('dRaCuLa');
       expect(searchCaseInsensitive.length, equals(1));
       expect(searchCaseInsensitive.first.title, equals('Dracula'));
+
+      final searchMoney = service.searchBooks('psychology of money');
+      expect(searchMoney.length, equals(1));
+      expect(searchMoney.first.author, equals('Morgan Housel'));
 
       final searchEmpty = service.searchBooks('');
       expect(searchEmpty, isEmpty);

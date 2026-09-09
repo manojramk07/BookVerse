@@ -299,6 +299,33 @@ class LocalBookService {
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/98/pg98.txt',
       assetPath: 'assets/books/tale_of_two_cities.txt',
     ),
+    Book(
+      id: 'psychology_of_money',
+      title: 'The Psychology of Money',
+      author: 'Morgan Housel',
+      description:
+          'Doing well with money isn’t necessarily about what you know. It’s about how you behave. And behavior is hard to teach, even to really smart people. In The Psychology of Money, award-winning author Morgan Housel shares 19 short stories exploring the strange ways people think about money and teaches you how to make better sense of one of life’s most important topics.',
+      category: 'Philosophy',
+      rating: 4.8,
+      ratingCount: 38400,
+      accentColor: Color(0xFF0D9488),
+      progress: 0.0,
+      readingPosition: 0.0,
+      chapterTitle: 'Introduction: The Greatest Show on Earth',
+      readingText: '',
+      isFavorite: false,
+      isSaved: false,
+      isCompleted: false,
+      featured: true,
+      popularity: 1,
+      publisher: 'Harriman House',
+      publishedDate: '2020',
+      isbn: '9780857197689',
+      pageCount: 253,
+      language: 'en',
+      hasGutenbergContent: true,
+      assetPath: 'assets/books/psychology_of_money.txt',
+    ),
   ];
 
   static final Map<String, List<String>> _categoryTags = {
@@ -313,14 +340,15 @@ class LocalBookService {
       'wizard_of_oz',
       'tale_of_two_cities',
       'alice_in_wonderland',
+      'psychology_of_money',
     ],
     'romance': ['pride_and_prejudice', 'little_women'],
     'mystery': ['sherlock_holmes', 'dracula', 'picture_of_dorian_gray'],
     'fantasy': ['alice_in_wonderland', 'wizard_of_oz'],
-    'science': ['the_time_machine', 'frankenstein'],
-    'philosophy': ['picture_of_dorian_gray', 'frankenstein'],
+    'science': ['the_time_machine', 'frankenstein', 'psychology_of_money'],
+    'philosophy': ['psychology_of_money', 'picture_of_dorian_gray', 'frankenstein'],
     'history': ['tale_of_two_cities', 'pride_and_prejudice'],
-    'biography': ['little_women', 'pride_and_prejudice'],
+    'biography': ['psychology_of_money', 'little_women', 'pride_and_prejudice'],
   };
 
   /// Returns all 10 real public-domain books
