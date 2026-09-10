@@ -75,6 +75,15 @@ void main() {
       final science = service.getBooksByCategory('Science');
       expect(science.any((b) => b.title.contains('Time Machine') || b.title.contains('Frankenstein')), isTrue);
 
+      final comics = service.getBooksByCategory('Comics');
+      expect(comics.any((b) => b.title.contains('Oz') || b.title.contains('Alice')), isTrue);
+
+      final adventure = service.getBooksByCategory('Adventure');
+      expect(adventure.any((b) => b.title.contains('Sherlock') || b.title.contains('Oz')), isTrue);
+
+      final scifi = service.getBooksByCategory('Sci-Fi');
+      expect(scifi.any((b) => b.title.contains('Time Machine') || b.title.contains('Frankenstein')), isTrue);
+
       final history = service.getBooksByCategory('History');
       expect(history.any((b) => b.title.contains('Tale of Two Cities')), isTrue);
     });

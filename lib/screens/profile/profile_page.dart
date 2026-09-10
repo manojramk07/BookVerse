@@ -257,63 +257,35 @@ class _ProfilePageState extends State<ProfilePage> {
     final unlockedAchievements = state.unlockedAchievementsCount;
 
     return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: () async {
-          state.refreshData();
-          await Future.delayed(const Duration(milliseconds: 250));
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Screen Header with Safe Refresh Action
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Profile',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF673AB7),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Your reading identity & library statistics',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Screen Header
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Profile',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF5E35B1),
+                    letterSpacing: -0.5,
                   ),
-                  IconButton.filledTonal(
-                    icon: const Icon(Icons.sync_rounded, size: 22),
-                    tooltip: 'Refresh Reading Stats',
-                    style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF673AB7).withValues(alpha: isDark ? 0.25 : 0.1),
-                      foregroundColor: const Color(0xFF673AB7),
-                    ),
-                    onPressed: () {
-                      state.refreshData();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Reading stats and streaks refreshed!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Your reading identity & library statistics',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
-                ],
-              ),
-              const SizedBox(height: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
 
               // Profile Hero Card with Premium Indigo/Slate Color Scheme
               Container(
@@ -466,6 +438,41 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 10),
+
+                    // Total Points & Badges Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF5E35B1), Color(0xFFD97706)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD97706).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.stars_rounded, color: Colors.white, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${state.totalAchievementPoints} PTS  •  ${state.unlockedAchievementsCount} Badges',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                     if (state.userEmail.isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -525,7 +532,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 20),
 
-              // Modern Tinted Reading Statistics Row
+              // 2-Color Cohesive Reading Statistics Row
               Row(
                 children: [
                   Expanded(
@@ -533,7 +540,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       number: '${state.booksRead}',
                       label: 'Finished',
                       icon: Icons.check_circle_outline,
-                      color: const Color(0xFF10B981), // Emerald
+                      color: const Color(0xFF5E35B1), // Royal Indigo
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -542,7 +549,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       number: '${state.currentlyReading.length}',
                       label: 'Reading',
                       icon: Icons.auto_stories_outlined,
-                      color: const Color(0xFF3B82F6), // Azure Blue
+                      color: const Color(0xFFD97706), // Warm Amber
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -551,7 +558,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       number: '${state.libraryBooks.length}',
                       label: 'Library',
                       icon: Icons.bookmark_outline,
-                      color: const Color(0xFF8B5CF6), // Royal Purple
+                      color: const Color(0xFF5E35B1), // Royal Indigo
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -560,7 +567,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       number: '${state.currentStreak}d',
                       label: 'Streak',
                       icon: Icons.local_fire_department_outlined,
-                      color: const Color(0xFFF59E0B), // Solar Amber
+                      color: const Color(0xFFD97706), // Warm Amber
                     ),
                   ),
                 ],
@@ -661,10 +668,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2B2219) : const Color(0xFFFFF7ED),
+                          color: isDark ? const Color(0xFF261D12) : const Color(0xFFFFFBEB),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: isDark ? const Color(0xFF5E3A1A) : const Color(0xFFFED7AA),
+                            color: isDark ? const Color(0xFF452B0F) : const Color(0xFFFDE68A),
                           ),
                         ),
                         child: Column(
@@ -675,7 +682,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               children: [
                                 const Icon(
                                   Icons.local_fire_department_rounded,
-                                  color: Color(0xFFF97316),
+                                  color: Color(0xFFD97706),
                                   size: 28,
                                 ),
                                 Text(
@@ -683,7 +690,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: Color(0xFFF97316),
+                                    color: Color(0xFFD97706),
                                   ),
                                 ),
                               ],
@@ -716,10 +723,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF261D33) : const Color(0xFFFBF5FF),
+                          color: isDark ? const Color(0xFF1E1B2E) : const Color(0xFFF5F3FF),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: isDark ? const Color(0xFF503572) : const Color(0xFFE9D5FF),
+                            color: isDark ? const Color(0xFF383254) : const Color(0xFFDDD6FE),
                           ),
                         ),
                         child: Column(
@@ -730,7 +737,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               children: [
                                 const Icon(
                                   Icons.emoji_events_rounded,
-                                  color: Color(0xFF8B5CF6),
+                                  color: Color(0xFF5E35B1),
                                   size: 28,
                                 ),
                                 Text(
@@ -738,7 +745,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: Color(0xFF8B5CF6),
+                                    color: Color(0xFF5E35B1),
                                   ),
                                 ),
                               ],
@@ -762,6 +769,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
+
+              // Unlocked Achievements Showcase
+              _buildAchievementsShowcase(context, state, isDark),
               const SizedBox(height: 20),
 
               // In-Profile Quick Theme Switcher (Lag-free)
@@ -831,7 +842,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               ProfileOption(
-                icon: Icons.settings_outlined,
+                 icon: Icons.settings_outlined,
                 title: 'Settings & Preferences',
                 onTap: () => Navigator.push(
                   context,
@@ -841,6 +852,244 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
+      );
+  }
+
+  Widget _buildAchievementsShowcase(BuildContext context, AppState state, bool isDark) {
+    final unlocked = state.unlockedAchievements;
+    final totalCount = achievementCatalog.length;
+    final totalPoints = state.totalAchievementPoints;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1B2E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF383254) : const Color(0xFFE4DCF9),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.military_tech_rounded, color: Color(0xFFD97706), size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    'Achievements Showcase',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AchievementPage()),
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        'View All',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5E35B1),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, size: 16, color: Color(0xFF5E35B1)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Points & Rank banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF261D12), const Color(0xFF2B1B3D)]
+                    : [const Color(0xFFFFFBEB), const Color(0xFFF5F3FF)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? const Color(0xFF4D3618) : const Color(0xFFFDE68A),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.stars_rounded, color: Color(0xFFD97706), size: 20),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$totalPoints Points Earned',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFFD97706),
+                          ),
+                        ),
+                        Text(
+                          '${unlocked.length} of $totalCount badges unlocked',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5E35B1).withValues(alpha: isDark ? 0.3 : 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    totalPoints >= 1000
+                        ? 'Master Reader'
+                        : totalPoints >= 500
+                            ? 'Avid Reader'
+                            : totalPoints >= 200
+                                ? 'Bookworm'
+                                : 'Novice Reader',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: Color(0xFF5E35B1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Unlocked items preview
+          if (unlocked.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF161420) : const Color(0xFFF9F8FD),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.emoji_events_outlined, size: 36, color: Colors.grey.shade500),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No Badges Unlocked Yet',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Read books, build streaks, or add titles to your library to earn achievement badges and points!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              height: 116,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: unlocked.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, idx) {
+                  final badge = unlocked[idx];
+                  return Container(
+                    width: 140,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF161420) : const Color(0xFFF9F8FD),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.3 : 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(badge.icon, size: 24, color: const Color(0xFF5E35B1)),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD97706).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '+${badge.points}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFD97706),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          badge.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          badge.description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

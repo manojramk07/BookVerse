@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -7,6 +8,42 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/achievement_model.dart';
 import '../models/book_model.dart';
 import 'local_book_service.dart';
+import 'notification_service.dart';
+
+class DailyReadingRecord {
+  final int seconds;
+  final List<String> bookTitles;
+
+  const DailyReadingRecord({
+    required this.seconds,
+    required this.bookTitles,
+  });
+
+  DailyReadingRecord copyWith({
+    int? seconds,
+    List<String>? bookTitles,
+  }) {
+    return DailyReadingRecord(
+      seconds: seconds ?? this.seconds,
+      bookTitles: bookTitles ?? this.bookTitles,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'seconds': seconds,
+        'bookTitles': bookTitles,
+      };
+
+  factory DailyReadingRecord.fromJson(Map<String, dynamic> json) {
+    return DailyReadingRecord(
+      seconds: (json['seconds'] as num?)?.toInt() ?? 0,
+      bookTitles: (json['bookTitles'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+}
 
 class AppState extends ChangeNotifier {
   AppState(this._preferences);
@@ -34,6 +71,7 @@ class AppState extends ChangeNotifier {
   final Map<String, double> positionByBook = {};
   final Set<String> readingDays = {};
   final Map<String, String> achievementUnlockedDates = {};
+  final Map<String, DailyReadingRecord> dailyReadingRecords = {};
 
   static Future<AppState> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -78,11 +116,18 @@ class AppState extends ChangeNotifier {
         try {
           final map = jsonDecode(jsonStr) as Map<String, dynamic>;
           var book = Book.fromJson(map);
-          if (book.assetPath == null) {
-            final local = LocalBookService().getBookById(book.id);
-            if (local?.assetPath != null) {
-              book = book.copyWith(assetPath: local!.assetPath);
-            }
+          final local = LocalBookService().getBookById(book.id);
+          if (local != null && local.assetPath != null) {
+            book = book.copyWith(
+              assetPath: local.assetPath,
+              contentAssetPath: local.contentAssetPath ?? local.assetPath,
+            );
+          } else if (book.assetPath != null && book.assetPath!.toLowerCase().endsWith('.txt')) {
+            final converted = book.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf');
+            book = book.copyWith(
+              assetPath: converted,
+              contentAssetPath: converted,
+            );
           }
           state._savedBooks[id] = book;
           state.progressByBook[id] = book.progress;
@@ -106,6 +151,17 @@ class AppState extends ChangeNotifier {
       } catch (_) {}
     }
 
+    // Load daily reading records
+    final dailyJson = prefs.getString('dailyReadingRecords');
+    if (dailyJson != null && dailyJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(dailyJson) as Map<String, dynamic>;
+        state.dailyReadingRecords.addAll(
+          decoded.map((k, v) => MapEntry(k, DailyReadingRecord.fromJson(v as Map<String, dynamic>))),
+        );
+      } catch (_) {}
+    }
+
     state._refreshAchievementUnlocks();
     return state;
   }
@@ -121,9 +177,35 @@ class AppState extends ChangeNotifier {
 
   /// All books explicitly in the user's library
   List<Book> get libraryBooks {
-    return _savedBooks.values
-        .where((b) => libraryBookIds.contains(b.id) || b.isSaved)
-        .toList();
+    final list = <Book>[];
+    for (final id in libraryBookIds) {
+      final book = _savedBooks[id] ?? LocalBookService().getBookById(id);
+      if (book != null) {
+        list.add(book);
+      }
+    }
+    for (final b in _savedBooks.values) {
+      if (b.isSaved && !list.any((item) => item.id == b.id)) {
+        list.add(b);
+      }
+    }
+    return list;
+  }
+
+  /// All unlocked achievements
+  List<AchievementDefinition> get unlockedAchievements {
+    return achievementCatalog.where((item) => isAchievementUnlocked(item.id)).toList();
+  }
+
+  /// Total points earned across all unlocked achievements
+  int get totalAchievementPoints {
+    var pts = 0;
+    for (final a in achievementCatalog) {
+      if (isAchievementUnlocked(a.id)) {
+        pts += a.points;
+      }
+    }
+    return pts;
   }
 
   /// All books marked as favorite
@@ -191,19 +273,63 @@ class AppState extends ChangeNotifier {
     return best;
   }
 
+  int get totalReadingSeconds {
+    var total = 0;
+    for (final r in dailyReadingRecords.values) {
+      total += r.seconds;
+    }
+    return total;
+  }
+
+  int get totalReadingMinutes => totalReadingSeconds ~/ 60;
+
+  int get maxDailyReadingMinutes {
+    var maxSec = 0;
+    for (final r in dailyReadingRecords.values) {
+      if (r.seconds > maxSec) maxSec = r.seconds;
+    }
+    return maxSec ~/ 60;
+  }
+
+  DailyReadingRecord getReadingRecordForDate(DateTime date) {
+    final key = dayKey(date);
+    return dailyReadingRecords[key] ?? const DailyReadingRecord(seconds: 0, bookTitles: []);
+  }
+
+  static String formatDuration(int totalSeconds) {
+    if (totalSeconds <= 0) return '0 mins';
+    if (totalSeconds < 60) return '$totalSeconds sec';
+    final minutes = totalSeconds ~/ 60;
+    if (minutes < 60) return '$minutes min${minutes == 1 ? '' : 's'}';
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) {
+      return '$hours hr${hours == 1 ? '' : 's'}';
+    }
+    return '$hours hr${hours == 1 ? '' : 's'} $remainingMinutes min';
+  }
+
   // ================= MUTATIONS =================
 
   /// Toggles whether a book is in the user's personal library
   void toggleLibrary(Book book) {
+    final local = LocalBookService().getBookById(book.id);
+    final effectiveAsset = local?.assetPath ??
+        (book.assetPath?.toLowerCase().endsWith('.txt') == true
+            ? book.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf')
+            : book.assetPath);
+    final baseBook = effectiveAsset != null ? book.copyWith(assetPath: effectiveAsset) : book;
     final isSaved = libraryBookIds.contains(book.id);
-    final updatedBook = book.copyWith(isSaved: !isSaved);
+    final updatedBook = baseBook.copyWith(isSaved: !isSaved);
 
     if (isSaved) {
       libraryBookIds.remove(book.id);
       _savedBooks[book.id] = updatedBook;
+      NotificationService.instance.notifyBookRemovedFromLibrary(book.title);
     } else {
       libraryBookIds.add(book.id);
       _savedBooks[book.id] = updatedBook;
+      NotificationService.instance.notifyBookAddedToLibrary(book.title);
     }
 
     _persistBook(updatedBook);
@@ -214,8 +340,14 @@ class AppState extends ChangeNotifier {
 
   /// Toggles favorite status for a book
   void toggleFavorite(Book book) {
+    final local = LocalBookService().getBookById(book.id);
+    final effectiveAsset = local?.assetPath ??
+        (book.assetPath?.toLowerCase().endsWith('.txt') == true
+            ? book.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf')
+            : book.assetPath);
+    final baseBook = effectiveAsset != null ? book.copyWith(assetPath: effectiveAsset) : book;
     final isFav = favoriteBookIds.contains(book.id);
-    final updatedBook = book.copyWith(isFavorite: !isFav);
+    final updatedBook = baseBook.copyWith(isFavorite: !isFav);
 
     if (isFav) {
       favoriteBookIds.remove(book.id);
@@ -227,6 +359,7 @@ class AppState extends ChangeNotifier {
     _persistBook(updatedBook);
     _saveStringSet('favoriteBooks', favoriteBookIds);
     _refreshAchievementUnlocks();
+    NotificationService.instance.notifyBookFavorited(book.title, !isFav);
     notifyListeners();
   }
 
@@ -254,7 +387,14 @@ class AppState extends ChangeNotifier {
       _saveStringSet('completedBooks', completedBookIds);
     }
 
-    final updatedBook = book.copyWith(
+    final local = LocalBookService().getBookById(book.id);
+    final effectiveAsset = local?.assetPath ??
+        (book.assetPath?.toLowerCase().endsWith('.txt') == true
+            ? book.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf')
+            : book.assetPath);
+    final baseBook = effectiveAsset != null ? book.copyWith(assetPath: effectiveAsset) : book;
+
+    final updatedBook = baseBook.copyWith(
       progress: clampedProgress,
       readingPosition: position,
       isCompleted: completed,
@@ -263,8 +403,58 @@ class AppState extends ChangeNotifier {
     _savedBooks[book.id] = updatedBook;
     _persistBook(updatedBook);
 
+    // Register book title in daily record
+    final currentRecord = dailyReadingRecords[todayKey] ??
+        const DailyReadingRecord(seconds: 0, bookTitles: []);
+    if (!currentRecord.bookTitles.contains(book.title)) {
+      final updatedTitles = List<String>.from(currentRecord.bookTitles)..add(book.title);
+      dailyReadingRecords[todayKey] = currentRecord.copyWith(bookTitles: updatedTitles);
+      _debounceSaveDailyRecords();
+    }
+
     _refreshAchievementUnlocks();
     notifyListeners();
+  }
+
+  Timer? _dailyRecordsSaveTimer;
+
+  /// Records reading time and which book was read on the current date in real time.
+  void recordReadingTime({
+    required Book book,
+    required int seconds,
+  }) {
+    if (seconds <= 0) return;
+    final now = DateTime.now();
+    final todayKey = dayKey(now);
+
+    readingDays.add(todayKey);
+    _saveStringSet('readingDays', readingDays);
+
+    final current = dailyReadingRecords[todayKey] ??
+        const DailyReadingRecord(seconds: 0, bookTitles: []);
+    final updatedTitles = List<String>.from(current.bookTitles);
+    if (!updatedTitles.contains(book.title)) {
+      updatedTitles.add(book.title);
+    }
+
+    dailyReadingRecords[todayKey] = current.copyWith(
+      seconds: current.seconds + seconds,
+      bookTitles: updatedTitles,
+    );
+
+    _debounceSaveDailyRecords();
+    _refreshAchievementUnlocks();
+    notifyListeners();
+  }
+
+  void _debounceSaveDailyRecords() {
+    _dailyRecordsSaveTimer?.cancel();
+    _dailyRecordsSaveTimer = Timer(const Duration(seconds: 2), () {
+      _preferences.setString(
+        'dailyReadingRecords',
+        jsonEncode(dailyReadingRecords.map((k, v) => MapEntry(k, v.toJson()))),
+      );
+    });
   }
 
   // ================= ACHIEVEMENTS =================
@@ -294,6 +484,10 @@ class AppState extends ChangeNotifier {
         return libraryBooks.length;
       case AchievementRequirement.favoriteFirst:
         return favoriteBooks.length;
+      case AchievementRequirement.readingMinutes:
+        return totalReadingMinutes;
+      case AchievementRequirement.dailyReadingMinutes:
+        return maxDailyReadingMinutes;
     }
   }
 
@@ -316,6 +510,10 @@ class AppState extends ChangeNotifier {
           !achievementUnlockedDates.containsKey(achievement.id)) {
         achievementUnlockedDates[achievement.id] = today;
         updated = true;
+        NotificationService.instance.notifyAchievementUnlocked(
+          achievement.title,
+          achievement.points,
+        );
       }
     }
     if (updated) {
@@ -389,12 +587,14 @@ class AppState extends ChangeNotifier {
     positionByBook.clear();
     readingDays.clear();
     achievementUnlockedDates.clear();
+    dailyReadingRecords.clear();
 
     await _preferences.remove('libraryBooks');
     await _preferences.remove('favoriteBooks');
     await _preferences.remove('completedBooks');
     await _preferences.remove('readingDays');
     await _preferences.remove('achievementUnlockedDates');
+    await _preferences.remove('dailyReadingRecords');
     final savedKeys = _preferences.getStringList('savedBookIndex') ?? [];
     for (final id in savedKeys) {
       await _preferences.remove('saved_book_$id');
@@ -433,6 +633,71 @@ class AppState extends ChangeNotifier {
   void setAnnualGoal(int goal) {
     annualReadingGoal = goal;
     _preferences.setInt('annualGoal', goal);
+    NotificationService.instance.notifyGoalUpdated(goal);
+    notifyListeners();
+  }
+
+  Future<void> sendReadingReminderNow() async {
+    await NotificationService.instance.notifyReadingReminder(
+      currentStreak: currentStreak,
+    );
+  }
+
+  /// Clears all reading history, library books, favorites, streaks, and achievements.
+  /// Preserves user profile details (name, permanent ID, email, bio) and theme.
+  Future<void> clearAllDataExceptProfile() async {
+    final savedName = userName;
+    final savedId = userId;
+    final savedEmail = userEmail;
+    final savedBio = userBio;
+    final savedTheme = themeMode;
+
+    _savedBooks.clear();
+    progressByBook.clear();
+    positionByBook.clear();
+    completedBookIds.clear();
+    favoriteBookIds.clear();
+    libraryBookIds.clear();
+    readingDays.clear();
+    dailyReadingRecords.clear();
+    achievementUnlockedDates.clear();
+    annualReadingGoal = 12;
+
+    final keysToRemove = [
+      'savedBookIndex',
+      'libraryBooks',
+      'favoriteBooks',
+      'completedBooks',
+      'readingDays',
+      'dailyReadingRecords',
+      'achievementUnlockedDates',
+      'annualGoal',
+    ];
+    for (final key in keysToRemove) {
+      await _preferences.remove(key);
+    }
+
+    final allKeys = _preferences.getKeys();
+    for (final key in allKeys) {
+      if (key.startsWith('saved_book_')) {
+        await _preferences.remove(key);
+      }
+    }
+
+    userName = savedName;
+    userId = savedId;
+    userEmail = savedEmail;
+    userBio = savedBio;
+    themeMode = savedTheme;
+
+    await _preferences.setString('userName', savedName);
+    await _preferences.setString('userId', savedId);
+    await _preferences.setString('userEmail', savedEmail);
+    await _preferences.setString('userBio', savedBio);
+    await _preferences.setString('themeMode', savedTheme.name);
+
+    _refreshAchievementUnlocks();
+    await NotificationService.instance.notifyDataReset();
     notifyListeners();
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../models/book_model.dart';
 import '../services/app_state.dart';
@@ -8,8 +9,13 @@ import 'reading_page.dart';
 
 class BookDetailsPage extends StatefulWidget {
   final Book book;
+  final Widget Function(BuildContext context, String assetPath, PdfViewerController controller)? pdfViewerBuilder;
 
-  const BookDetailsPage({super.key, required this.book});
+  const BookDetailsPage({
+    super.key,
+    required this.book,
+    this.pdfViewerBuilder,
+  });
 
   @override
   State<BookDetailsPage> createState() => _BookDetailsPageState();
@@ -28,8 +34,13 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
 
     final localBook = LocalBookService().getBookById(currentBook.id);
     if (localBook != null) {
+      final effectiveAsset = localBook.assetPath ??
+          (currentBook.assetPath?.toLowerCase().endsWith('.txt') == true
+              ? currentBook.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf')
+              : currentBook.assetPath);
       currentBook = currentBook.copyWith(
-        assetPath: currentBook.assetPath ?? localBook.assetPath,
+        assetPath: effectiveAsset,
+        contentAssetPath: localBook.contentAssetPath ?? effectiveAsset,
         hasGutenbergContent: true,
         gutenbergId: currentBook.gutenbergId ?? localBook.gutenbergId,
         gutenbergTextUrl: currentBook.gutenbergTextUrl ?? localBook.gutenbergTextUrl,
@@ -37,6 +48,10 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
       );
       isCheckingGutenberg = false;
     } else if (currentBook.assetPath != null && currentBook.assetPath!.isNotEmpty) {
+      final effectiveAsset = currentBook.assetPath!.toLowerCase().endsWith('.txt')
+          ? currentBook.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf')
+          : currentBook.assetPath!;
+      currentBook = currentBook.copyWith(assetPath: effectiveAsset);
       isCheckingGutenberg = false;
     } else {
       _checkGutenbergAvailability();
@@ -71,24 +86,33 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   }
 
   void _onReadTapped(BuildContext context) {
-    final canRead = (currentBook.assetPath != null && currentBook.assetPath!.isNotEmpty) ||
+    final localBook = LocalBookService().getBookById(currentBook.id);
+    var effectiveAsset = localBook?.assetPath ?? currentBook.assetPath ?? currentBook.contentAssetPath;
+    if (effectiveAsset != null && effectiveAsset.toLowerCase().endsWith('.txt')) {
+      effectiveAsset = effectiveAsset.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf');
+    }
+    final canRead = (effectiveAsset != null && effectiveAsset.isNotEmpty) ||
         (currentBook.hasGutenbergContent && currentBook.gutenbergTextUrl != null);
 
     if (canRead) {
+      final bookToOpen = currentBook.copyWith(assetPath: effectiveAsset);
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ReadingPage(book: currentBook),
+          builder: (_) => ReadingPage(
+            book: bookToOpen,
+            pdfViewerBuilder: widget.pdfViewerBuilder,
+          ),
         ),
       );
     } else {
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Full Text Unavailable'),
-          content: const Text(
-            'Full text is not available for this book.\n\n'
-            'Only public-domain books catalogued on Project Gutenberg or local classics can be read inside the app.',
+          title: const Text('Unable to open this book.'),
+          content: Text(
+            'Full text is not available for "${currentBook.title}".\n\n'
+            'Please select another classic from the library or catalogue.',
           ),
           actions: [
             TextButton(
@@ -104,6 +128,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isInLibrary = appState.isBookInLibrary(currentBook.id);
     final isFavorite = appState.isBookFavorite(currentBook.id);
     final progress = appState.progressFor(currentBook);
@@ -230,13 +255,13 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple.shade50,
+                      color: isDark ? Colors.deepPurple.shade900.withValues(alpha: 0.4) : Colors.deepPurple.shade50,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       currentBook.category,
-                      style: const TextStyle(
-                        color: Colors.deepPurple,
+                      style: TextStyle(
+                        color: isDark ? Colors.deepPurple.shade200 : Colors.deepPurple,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -246,12 +271,15 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         '${currentBook.pageCount} pages',
-                        style: const TextStyle(color: Colors.black87, fontSize: 13),
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black87,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                 ],
@@ -300,7 +328,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                         isCheckingGutenberg
                             ? 'Checking Project Gutenberg reader availability...'
                             : currentBook.assetPath != null
-                                ? 'Full classic text available offline'
+                                ? 'Full classic book available offline (PDF)'
                                 : currentBook.hasGutenbergContent
                                     ? 'Full text available via Project Gutenberg'
                                     : 'Full text not available (metadata only)',
@@ -324,9 +352,9 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,20 +388,21 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
               ],
 
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Description',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 currentBook.description,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.6,
-                  color: Colors.black87,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
 

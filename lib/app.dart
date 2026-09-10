@@ -22,12 +22,29 @@ class _BookVerseAppState extends State<BookVerseApp> {
     final scheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFF673AB7),
       brightness: brightness,
+      surface: isLight ? Colors.white : const Color(0xFF181B26),
     );
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          isLight ? const Color(0xFFF8F7FC) : const Color(0xFF131218),
+          isLight ? const Color(0xFFF8F7FC) : const Color(0xFF0F111A),
+      cardColor: isLight ? Colors.white : const Color(0xFF181B26),
+      dialogTheme: DialogThemeData(
+        backgroundColor: isLight ? Colors.white : const Color(0xFF181B26),
+      ),
+      dividerColor: isLight ? const Color(0xFFE2E8F0) : const Color(0xFF262C3D),
+      cardTheme: CardThemeData(
+        color: isLight ? Colors.white : const Color(0xFF181B26),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isLight ? const Color(0xFFE2E8F0) : const Color(0xFF262C3D),
+            width: 1,
+          ),
+        ),
+      ),
       fontFamily: 'Roboto',
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

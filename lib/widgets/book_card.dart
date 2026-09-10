@@ -20,6 +20,8 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: 175,
       margin: const EdgeInsets.only(right: 15),
@@ -27,9 +29,13 @@ class BookCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Card(
-          elevation: 3,
+          color: isDark ? const Color(0xFF181B26) : Colors.white,
+          elevation: isDark ? 0 : 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: isDark ? const Color(0xFF262C3D) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -73,9 +79,10 @@ class BookCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -83,8 +90,8 @@ class BookCard extends StatelessWidget {
                   author,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
                     fontSize: 13,
                   ),
                 ),
@@ -94,7 +101,8 @@ class BookCard extends StatelessWidget {
                     value: progress,
                     minHeight: 5,
                     borderRadius: BorderRadius.circular(10),
-                    backgroundColor: Colors.grey.shade200,
+                    backgroundColor:
+                        isDark ? const Color(0xFF232838) : Colors.grey.shade200,
                   ),
                 ],
               ],

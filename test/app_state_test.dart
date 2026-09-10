@@ -150,5 +150,89 @@ void main() {
       expect(reloadedState.userBio, equals('Reading classic gothic novels'));
       expect(reloadedState.userInitial, equals('J'));
     });
+
+    test('Real-time daily reading time and books read are tracked per date', () async {
+      final state = await AppState.load();
+      final now = DateTime.now();
+      const book1 = Book(
+        id: 'book_1',
+        title: 'Frankenstein',
+        author: 'Mary Shelley',
+        description: 'Sci-Fi Gothic',
+        category: 'Sci-Fi',
+        rating: 4.7,
+        accentColor: Colors.green,
+        progress: 0.1,
+        chapterTitle: 'Letter 1',
+        readingText: '',
+        isFavorite: false,
+        isSaved: false,
+        isCompleted: false,
+      );
+      const book2 = Book(
+        id: 'book_2',
+        title: 'Dracula',
+        author: 'Bram Stoker',
+        description: 'Gothic Horror',
+        category: 'Fiction',
+        rating: 4.6,
+        accentColor: Colors.red,
+        progress: 0.2,
+        chapterTitle: 'Chapter 1',
+        readingText: '',
+        isFavorite: false,
+        isSaved: false,
+        isCompleted: false,
+      );
+
+      // Record 120 seconds for Frankenstein
+      state.recordReadingTime(book: book1, seconds: 120);
+
+      var record = state.getReadingRecordForDate(now);
+      expect(record.seconds, equals(120));
+      expect(record.bookTitles, contains('Frankenstein'));
+
+      // Record 180 seconds for Dracula on same date
+      state.recordReadingTime(book: book2, seconds: 180);
+
+      record = state.getReadingRecordForDate(now);
+      expect(record.seconds, equals(300));
+      expect(record.bookTitles, containsAll(['Frankenstein', 'Dracula']));
+      expect(state.totalReadingSeconds, equals(300));
+      expect(state.totalReadingMinutes, equals(5));
+
+      // Test formatDuration helper
+      expect(AppState.formatDuration(45), equals('45 sec'));
+      expect(AppState.formatDuration(300), equals('5 mins'));
+      expect(AppState.formatDuration(3660), equals('1 hr 1 min'));
+    });
+
+    test('Reading time achievements unlock when duration threshold is reached', () async {
+      final state = await AppState.load();
+      const testBook = Book(
+        id: 'book_time',
+        title: 'The Time Machine',
+        author: 'H.G. Wells',
+        description: 'Sci-Fi',
+        category: 'Sci-Fi',
+        rating: 4.5,
+        accentColor: Colors.orange,
+        progress: 0.5,
+        chapterTitle: 'Chapter 1',
+        readingText: '',
+        isFavorite: false,
+        isSaved: false,
+        isCompleted: false,
+      );
+
+      // Record 16 minutes of reading time (960 seconds)
+      state.recordReadingTime(book: testBook, seconds: 960);
+      expect(state.isAchievementUnlocked('time-devotee'), isTrue);
+
+      // Record enough to reach 60 minutes total
+      state.recordReadingTime(book: testBook, seconds: 2700);
+      expect(state.isAchievementUnlocked('hour-reader'), isTrue);
+      expect(state.isAchievementUnlocked('power-session'), isTrue);
+    });
   });
 }

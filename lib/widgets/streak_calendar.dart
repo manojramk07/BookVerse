@@ -7,10 +7,16 @@ class StreakCalendar extends StatelessWidget {
     super.key,
     required this.month,
     required this.readingDays,
+    this.selectedDate,
+    this.onSelectDate,
+    this.dailyRecords,
   });
 
   final DateTime month;
   final Set<String> readingDays;
+  final DateTime? selectedDate;
+  final ValueChanged<DateTime>? onSelectDate;
+  final Map<String, DailyReadingRecord>? dailyRecords;
 
   @override
   Widget build(BuildContext context) {
@@ -40,44 +46,69 @@ class StreakCalendar extends StatelessWidget {
       final date = DateTime(month.year, month.month, day);
       final isFuture = date.isAfter(DateTime.now());
       final isToday = _dayKey(date) == _dayKey(DateTime.now());
+      final isSelected = selectedDate != null && _dayKey(date) == _dayKey(selectedDate!);
       final hasRead = readingDays.contains(_dayKey(date));
-      final tileColor = isFuture
-          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45)
-          : hasRead
-          ? theme.colorScheme.primaryContainer
-          : theme.colorScheme.surfaceContainerHighest;
-      final dateColor = isFuture
-          ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55)
-          : theme.colorScheme.onSurface;
-      cells.add(
-        Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: tileColor,
-            borderRadius: BorderRadius.circular(10),
-            border: isToday
-                ? Border.all(color: theme.colorScheme.primary, width: 2)
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '$day',
-                style: TextStyle(color: dateColor, fontWeight: FontWeight.w600),
+      final record = dailyRecords?[_dayKey(date)];
+
+      final tileColor = isSelected
+          ? const Color(0xFF5E35B1).withValues(alpha: 0.22)
+          : isFuture
+              ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45)
+              : hasRead
+                  ? const Color(0xFFD97706).withValues(alpha: 0.18)
+                  : theme.colorScheme.surfaceContainerHighest;
+      final dateColor = isSelected
+          ? const Color(0xFF5E35B1)
+          : isFuture
+              ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.55)
+              : theme.colorScheme.onSurface;
+
+      final cellWidget = Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: tileColor,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(color: const Color(0xFF5E35B1), width: 2)
+              : isToday
+                  ? Border.all(color: const Color(0xFFD97706), width: 1.8)
+                  : (hasRead ? Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.35)) : null),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$day',
+              style: TextStyle(
+                color: dateColor,
+                fontWeight: (isSelected || isToday || hasRead) ? FontWeight.bold : FontWeight.w600,
               ),
-              if (hasRead && !isFuture) ...[
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.check_rounded,
-                  size: 16,
-                  color: theme.colorScheme.primary,
-                ),
-              ],
+            ),
+            if (hasRead && !isFuture) ...[
+              const SizedBox(width: 2),
+              Icon(
+                (record != null && record.seconds > 0)
+                    ? Icons.local_fire_department_rounded
+                    : Icons.check_rounded,
+                size: 14,
+                color: const Color(0xFFD97706),
+              ),
             ],
-          ),
+          ],
         ),
       );
+
+      if (!isFuture && onSelectDate != null) {
+        cells.add(
+          InkWell(
+            onTap: () => onSelectDate!(date),
+            borderRadius: BorderRadius.circular(10),
+            child: cellWidget,
+          ),
+        );
+      } else {
+        cells.add(cellWidget);
+      }
     }
 
     return Column(

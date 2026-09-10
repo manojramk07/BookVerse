@@ -36,12 +36,16 @@ class _HomePageState extends State<HomePage> {
 
   final List<String> categories = const [
     'Fiction',
+    'Comics',
+    'Adventure',
+    'Mystery',
+    'Fantasy',
+    'Sci-Fi',
+    'Romance',
+    'Classics',
     'Science',
     'History',
-    'Mystery',
     'Philosophy',
-    'Romance',
-    'Fantasy',
     'Biography',
   ];
 
@@ -92,6 +96,8 @@ class _HomePageState extends State<HomePage> {
     final appState = AppStateScope.of(context);
     final continueReading = appState.currentlyReading;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _loadInitialData,
@@ -120,7 +126,10 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 4),
                         Text(
                           'Find your next favorite read',
-                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                          ),
                         ),
                       ],
                     ),
@@ -138,9 +147,11 @@ class _HomePageState extends State<HomePage> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
+                            color: isDark ? const Color(0xFF261D12) : Colors.orange.shade50,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.orange.shade200),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF5A3A10) : Colors.orange.shade200,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -174,12 +185,12 @@ class _HomePageState extends State<HomePage> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.deepPurple.shade50,
+                            color: isDark ? const Color(0xFF211D36) : Colors.deepPurple.shade50,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.emoji_events_outlined,
-                            color: Colors.deepPurple,
+                            color: isDark ? const Color(0xFFB39DDB) : Colors.deepPurple,
                             size: 20,
                           ),
                         ),
@@ -201,11 +212,14 @@ class _HomePageState extends State<HomePage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF181B26) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF262C3D) : Colors.grey.shade200,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
+                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -217,7 +231,10 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(width: 12),
                       Text(
                         'Search books, authors...',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500,
+                          fontSize: 15,
+                        ),
                       ),
                     ],
                   ),
@@ -243,10 +260,18 @@ class _HomePageState extends State<HomePage> {
                         progress: appState.progressFor(book),
                         coverUrl: book.coverUrl,
                         onTap: () {
+                          final local = _localBookService.getBookById(book.id);
+                          final effectiveAsset = local?.assetPath ??
+                              (book.assetPath?.toLowerCase().endsWith('.txt') == true
+                                  ? book.assetPath!.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '.pdf')
+                                  : book.assetPath);
+                          final effectiveBook = effectiveAsset != null
+                              ? book.copyWith(assetPath: effectiveAsset)
+                              : book;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => ReadingPage(book: book),
+                              builder: (_) => ReadingPage(book: effectiveBook),
                             ),
                           );
                         },

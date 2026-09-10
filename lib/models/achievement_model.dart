@@ -9,6 +9,8 @@ enum AchievementRequirement {
   libraryFirst,
   favoriteFirst,
   completedBook,
+  readingMinutes,
+  dailyReadingMinutes,
 }
 
 class AchievementDefinition {
@@ -19,6 +21,7 @@ class AchievementDefinition {
     required this.icon,
     required this.requirement,
     this.threshold = 1,
+    this.points = 50,
   });
 
   final String id;
@@ -27,6 +30,7 @@ class AchievementDefinition {
   final IconData icon;
   final AchievementRequirement requirement;
   final int threshold;
+  final int points;
 }
 
 const achievementCatalog = [
@@ -37,6 +41,7 @@ const achievementCatalog = [
     icon: Icons.auto_stories,
     requirement: AchievementRequirement.completedBook,
     threshold: 1,
+    points: 50,
   ),
   AchievementDefinition(
     id: 'books-3',
@@ -45,6 +50,7 @@ const achievementCatalog = [
     icon: Icons.menu_book,
     requirement: AchievementRequirement.booksRead,
     threshold: 3,
+    points: 100,
   ),
   AchievementDefinition(
     id: 'books-5',
@@ -53,6 +59,7 @@ const achievementCatalog = [
     icon: Icons.library_books,
     requirement: AchievementRequirement.booksRead,
     threshold: 5,
+    points: 200,
   ),
   AchievementDefinition(
     id: 'books-10',
@@ -61,6 +68,7 @@ const achievementCatalog = [
     icon: Icons.collections_bookmark,
     requirement: AchievementRequirement.booksRead,
     threshold: 10,
+    points: 500,
   ),
   AchievementDefinition(
     id: 'streak-3',
@@ -69,6 +77,7 @@ const achievementCatalog = [
     icon: Icons.local_fire_department,
     requirement: AchievementRequirement.readingStreak,
     threshold: 3,
+    points: 75,
   ),
   AchievementDefinition(
     id: 'streak-7',
@@ -77,6 +86,7 @@ const achievementCatalog = [
     icon: Icons.whatshot,
     requirement: AchievementRequirement.readingStreak,
     threshold: 7,
+    points: 150,
   ),
   AchievementDefinition(
     id: 'streak-14',
@@ -85,6 +95,7 @@ const achievementCatalog = [
     icon: Icons.bolt,
     requirement: AchievementRequirement.readingStreak,
     threshold: 14,
+    points: 300,
   ),
   AchievementDefinition(
     id: 'streak-30',
@@ -93,6 +104,7 @@ const achievementCatalog = [
     icon: Icons.workspace_premium,
     requirement: AchievementRequirement.readingStreak,
     threshold: 30,
+    points: 600,
   ),
   AchievementDefinition(
     id: 'days-7',
@@ -101,6 +113,7 @@ const achievementCatalog = [
     icon: Icons.calendar_month,
     requirement: AchievementRequirement.readingDays,
     threshold: 7,
+    points: 100,
   ),
   AchievementDefinition(
     id: 'days-15',
@@ -109,6 +122,7 @@ const achievementCatalog = [
     icon: Icons.event_available,
     requirement: AchievementRequirement.readingDays,
     threshold: 15,
+    points: 200,
   ),
   AchievementDefinition(
     id: 'days-30',
@@ -117,6 +131,7 @@ const achievementCatalog = [
     icon: Icons.card_membership,
     requirement: AchievementRequirement.readingDays,
     threshold: 30,
+    points: 400,
   ),
   AchievementDefinition(
     id: 'book-collector',
@@ -125,6 +140,7 @@ const achievementCatalog = [
     icon: Icons.bookmark,
     requirement: AchievementRequirement.libraryBooks,
     threshold: 10,
+    points: 250,
   ),
   AchievementDefinition(
     id: 'library-first',
@@ -133,6 +149,7 @@ const achievementCatalog = [
     icon: Icons.bookmark_add,
     requirement: AchievementRequirement.libraryFirst,
     threshold: 1,
+    points: 30,
   ),
   AchievementDefinition(
     id: 'favorite-first',
@@ -141,5 +158,60 @@ const achievementCatalog = [
     icon: Icons.favorite,
     requirement: AchievementRequirement.favoriteFirst,
     threshold: 1,
+    points: 30,
+  ),
+  AchievementDefinition(
+    id: 'time-devotee',
+    title: 'Time Devotee',
+    description: 'Read for at least 15 minutes total.',
+    icon: Icons.timer,
+    requirement: AchievementRequirement.readingMinutes,
+    threshold: 15,
+    points: 50,
+  ),
+  AchievementDefinition(
+    id: 'hour-reader',
+    title: 'Hourglass Reader',
+    description: 'Read for at least 1 hour total.',
+    icon: Icons.hourglass_bottom,
+    requirement: AchievementRequirement.readingMinutes,
+    threshold: 60,
+    points: 150,
+  ),
+  AchievementDefinition(
+    id: 'literary-scholar',
+    title: 'Literary Scholar',
+    description: 'Read for at least 3 hours total.',
+    icon: Icons.school,
+    requirement: AchievementRequirement.readingMinutes,
+    threshold: 180,
+    points: 350,
+  ),
+  AchievementDefinition(
+    id: 'power-session',
+    title: 'Power Session',
+    description: 'Read for at least 30 minutes in a single day.',
+    icon: Icons.offline_bolt,
+    requirement: AchievementRequirement.dailyReadingMinutes,
+    threshold: 30,
+    points: 100,
+  ),
+  AchievementDefinition(
+    id: 'avid-collector',
+    title: 'Avid Collector',
+    description: 'Add 5 books to your library.',
+    icon: Icons.bookmarks,
+    requirement: AchievementRequirement.libraryBooks,
+    threshold: 5,
+    points: 100,
+  ),
+  AchievementDefinition(
+    id: 'three-favorites',
+    title: 'Curator',
+    description: 'Save at least 3 favorite books.',
+    icon: Icons.favorite_rounded,
+    requirement: AchievementRequirement.favoriteFirst,
+    threshold: 3,
+    points: 100,
   ),
 ];

@@ -29,6 +29,7 @@ class Book {
   final bool hasGutenbergContent;
   final String? gutenbergTextUrl;
   final String? assetPath;
+  String? get contentAssetPath => assetPath;
   final DateTime? lastReadAt;
 
   const Book({
@@ -59,9 +60,10 @@ class Book {
     this.language,
     this.hasGutenbergContent = false,
     this.gutenbergTextUrl,
-    this.assetPath,
+    String? contentAssetPath,
+    String? assetPath,
     this.lastReadAt,
-  });
+  }) : assetPath = contentAssetPath ?? assetPath;
 
   Book copyWith({
     String? id,
@@ -91,6 +93,7 @@ class Book {
     String? language,
     bool? hasGutenbergContent,
     String? gutenbergTextUrl,
+    String? contentAssetPath,
     String? assetPath,
     DateTime? lastReadAt,
   }) {
@@ -122,7 +125,7 @@ class Book {
       language: language ?? this.language,
       hasGutenbergContent: hasGutenbergContent ?? this.hasGutenbergContent,
       gutenbergTextUrl: gutenbergTextUrl ?? this.gutenbergTextUrl,
-      assetPath: assetPath ?? this.assetPath,
+      assetPath: contentAssetPath ?? assetPath ?? this.assetPath,
       lastReadAt: lastReadAt ?? this.lastReadAt,
     );
   }
@@ -157,6 +160,7 @@ class Book {
       'hasGutenbergContent': hasGutenbergContent,
       'gutenbergTextUrl': gutenbergTextUrl,
       'assetPath': assetPath,
+      'contentAssetPath': assetPath,
       'lastReadAt': lastReadAt?.toIso8601String(),
     };
   }
@@ -193,7 +197,7 @@ class Book {
       language: json['language'] as String?,
       hasGutenbergContent: json['hasGutenbergContent'] as bool? ?? false,
       gutenbergTextUrl: json['gutenbergTextUrl'] as String?,
-      assetPath: json['assetPath'] as String?,
+      assetPath: (json['contentAssetPath'] ?? json['assetPath']) as String?,
       lastReadAt: json['lastReadAt'] != null
           ? DateTime.tryParse(json['lastReadAt'] as String)
           : null,

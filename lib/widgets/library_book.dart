@@ -18,9 +18,18 @@ class LibraryBook extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 15),
-      elevation: 2,
+      color: isDark ? const Color(0xFF181B26) : Colors.white,
+      elevation: isDark ? 0 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark ? const Color(0xFF262C3D) : const Color(0xFFE2E8F0),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(15),
         child: Row(
@@ -64,9 +73,10 @@ class LibraryBook extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -74,22 +84,23 @@ class LibraryBook extends StatelessWidget {
                     author,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.grey,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
                     ),
                   ),
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
                     value: progress,
                     color: Colors.deepPurple,
-                    backgroundColor: Colors.grey.shade200,
+                    backgroundColor:
+                        isDark ? const Color(0xFF232838) : Colors.grey.shade200,
                   ),
                   const SizedBox(height: 5),
                   Text(
                     '${(progress * 100).toInt()}% completed',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.grey,
                     ),
                   ),
                 ],

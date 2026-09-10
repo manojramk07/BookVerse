@@ -7,13 +7,12 @@ environment:
   sdk: ^3.13.1
 
 dependencies:
-  cloud_firestore: ^6.9.0
-  firebase_auth: ^6.6.1
-  firebase_core: ^4.14.0
   flutter:
     sdk: flutter
+  flutter_local_notifications: ^22.3.0
   http: ^1.5.0
   shared_preferences: ^2.5.3
+  syncfusion_flutter_pdfviewer: ^34.2.7
 
 dev_dependencies:
   flutter_test:
@@ -24,3 +23,25 @@ flutter:
   uses-material-design: true
   assets:
     - assets/books/
+    - assets/books/adventures_of_sherlock_holmes.pdf
+    - assets/books/alice_in_wonderland.pdf
+    - assets/books/dracula.pdf
+    - assets/books/frankenstein.pdf
+    - assets/books/little_women.pdf
+    - assets/books/picture_of_dorian_gray.pdf
+    - assets/books/pride_and_prejudice.pdf
+    - assets/books/psychology_of_money.pdf
+    - assets/books/tale_of_two_cities.pdf
+    - assets/books/the_time_machine.pdf
+    - assets/books/wizard_of_oz.pdf
+    - assets/books/adventures_of_sherlock_holmes.txt
+    - assets/books/alice_in_wonderland.txt
+    - assets/books/dracula.txt
+    - assets/books/frankenstein.txt
+    - assets/books/little_women.txt
+    - assets/books/picture_of_dorian_gray.txt
+    - assets/books/pride_and_prejudice.txt
+    - assets/books/psychology_of_money.txt
+    - assets/books/tale_of_two_cities.txt
+    - assets/books/the_time_machine.txt
+    - assets/books/wizard_of_oz.txt

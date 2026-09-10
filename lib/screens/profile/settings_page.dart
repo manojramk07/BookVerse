@@ -5,37 +5,6 @@ import '../../services/app_state.dart';
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  void _confirmClearData(BuildContext context, AppState state) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear Reading History?'),
-        content: const Text(
-          'This will permanently reset all your saved books, bookmarks, and reading progress stored on this device. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await state.clearAllReadingData();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reading history cleared.')),
-                );
-              }
-            },
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
@@ -54,22 +23,6 @@ class SettingsPage extends StatelessWidget {
           ),
           const Divider(),
           _heading('Reading Preferences'),
-          ListTile(
-            leading: const Icon(Icons.text_fields),
-            title: const Text('Reader Font Size'),
-            subtitle: Text('${state.fontSize.toInt()} px'),
-            trailing: SizedBox(
-              width: 140,
-              child: Slider(
-                value: state.fontSize,
-                min: 14,
-                max: 24,
-                divisions: 5,
-                label: '${state.fontSize.toInt()} px',
-                onChanged: state.setFontSize,
-              ),
-            ),
-          ),
           SwitchListTile(
             secondary: const Icon(Icons.save_outlined),
             title: const Text('Auto Save Reading Progress'),
@@ -80,27 +33,51 @@ class SettingsPage extends StatelessWidget {
           const Divider(),
           _heading('Notifications'),
           SwitchListTile(
-            secondary: const Icon(Icons.notifications_none),
-            title: const Text('Enable Notifications'),
+            secondary: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Enable Device Notifications'),
             subtitle: Text(
               state.notificationsEnabled
-                  ? 'Daily reading reminders enabled'
-                  : 'Notifications disabled',
+                  ? 'Real-time action notifications and daily reminders are active'
+                  : 'Notifications are currently disabled',
             ),
             value: state.notificationsEnabled,
             onChanged: state.setNotifications,
+          ),
+          ListTile(
+            leading: const Icon(Icons.alarm_on_rounded, color: Colors.deepPurple),
+            title: const Text('Send Reading Reminder Notification'),
+            subtitle: const Text('Test device reminder notification across apps'),
+            trailing: const Icon(Icons.send_rounded, size: 20, color: Colors.deepPurple),
+            onTap: () async {
+              state.setNotifications(true);
+              await state.sendReadingReminderNow();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reading reminder notification sent! Check your device notification shade.'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
           ),
           const Divider(),
           _heading('Storage & Privacy'),
           const ListTile(
             leading: Icon(Icons.lock_outline, color: Colors.green),
             title: Text('100% Local & Private'),
-            subtitle: Text('Your reading activity and library are stored exclusively on this device.'),
+            subtitle: Text('Your reading activity, streaks, and library are stored exclusively offline on this device.'),
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
-            title: const Text('Clear Reading History', style: TextStyle(color: Colors.red)),
-            subtitle: const Text('Reset all reading progress, streaks, and saved books'),
+            leading: const Icon(Icons.delete_sweep_outlined, color: Colors.redAccent),
+            title: const Text(
+              'Clear Reading History & Reset App Data',
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              'Fresh app start: resets reading progress, saved books, favorites & achievements. Your profile name and details are preserved.',
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.redAccent),
             onTap: () => _confirmClearData(context, state),
           ),
           const Divider(),
@@ -108,11 +85,11 @@ class SettingsPage extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('About BookVerse'),
-            subtitle: const Text('Version 1.0.0'),
+            subtitle: const Text('Version 1.0.0 (100% Offline)'),
             onTap: () => _showInfo(
               context,
               'About BookVerse',
-              'BookVerse is a clean, modern digital reading application powered by Google Books API for metadata discovery and Project Gutenberg for public-domain e-reading.',
+              'BookVerse is an offline digital library designed for classic literature and comics in PDF format, featuring zero external APIs, local streak tracking, and complete privacy.',
             ),
           ),
           ListTile(
@@ -121,7 +98,7 @@ class SettingsPage extends StatelessWidget {
             onTap: () => _showInfo(
               context,
               'Privacy',
-              'BookVerse does not track you or sell your reading habits. All progress and preferences are saved locally on your device.',
+              'BookVerse does not track you or sell your reading habits. All progress, reading time records, and preferences are saved locally on your device.',
             ),
           ),
         ],
@@ -180,6 +157,49 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmClearData(BuildContext context, AppState state) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+            SizedBox(width: 8),
+            Text('Reset App Data?'),
+          ],
+        ),
+        content: const Text(
+          'This will clear all your reading progress, saved books, favorites, reading streaks, and achievements for a fresh start.\n\nYour profile name, ID, and bio will NOT be erased.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await state.clearAllDataExceptProfile();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('App data reset successfully. Profile details preserved!'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: const Text('Reset All Data'),
+          ),
+        ],
       ),
     );
   }

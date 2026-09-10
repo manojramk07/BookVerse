@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show ByteData, rootBundle;
 
 import '../models/book_model.dart';
 
@@ -36,7 +39,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/1342/pg1342.txt',
-      assetPath: 'assets/books/pride_and_prejudice.txt',
+      assetPath: 'assets/books/pride_and_prejudice.pdf',
     ),
     Book(
       id: 'sherlock_holmes',
@@ -65,7 +68,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/1661/pg1661.txt',
-      assetPath: 'assets/books/adventures_of_sherlock_holmes.txt',
+      assetPath: 'assets/books/adventures_of_sherlock_holmes.pdf',
     ),
     Book(
       id: 'alice_in_wonderland',
@@ -94,7 +97,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/11/pg11.txt',
-      assetPath: 'assets/books/alice_in_wonderland.txt',
+      assetPath: 'assets/books/alice_in_wonderland.pdf',
     ),
     Book(
       id: 'frankenstein',
@@ -123,7 +126,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/84/pg84.txt',
-      assetPath: 'assets/books/frankenstein.txt',
+      assetPath: 'assets/books/frankenstein.pdf',
     ),
     Book(
       id: 'dracula',
@@ -152,7 +155,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/345/pg345.txt',
-      assetPath: 'assets/books/dracula.txt',
+      assetPath: 'assets/books/dracula.pdf',
     ),
     Book(
       id: 'the_time_machine',
@@ -181,7 +184,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/35/pg35.txt',
-      assetPath: 'assets/books/the_time_machine.txt',
+      assetPath: 'assets/books/the_time_machine.pdf',
     ),
     Book(
       id: 'picture_of_dorian_gray',
@@ -210,7 +213,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/174/pg174.txt',
-      assetPath: 'assets/books/picture_of_dorian_gray.txt',
+      assetPath: 'assets/books/picture_of_dorian_gray.pdf',
     ),
     Book(
       id: 'little_women',
@@ -239,7 +242,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/514/pg514.txt',
-      assetPath: 'assets/books/little_women.txt',
+      assetPath: 'assets/books/little_women.pdf',
     ),
     Book(
       id: 'wizard_of_oz',
@@ -268,7 +271,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/55/pg55.txt',
-      assetPath: 'assets/books/wizard_of_oz.txt',
+      assetPath: 'assets/books/wizard_of_oz.pdf',
     ),
     Book(
       id: 'tale_of_two_cities',
@@ -297,7 +300,7 @@ class LocalBookService {
       language: 'en',
       hasGutenbergContent: true,
       gutenbergTextUrl: 'https://www.gutenberg.org/cache/epub/98/pg98.txt',
-      assetPath: 'assets/books/tale_of_two_cities.txt',
+      assetPath: 'assets/books/tale_of_two_cities.pdf',
     ),
     Book(
       id: 'psychology_of_money',
@@ -324,7 +327,7 @@ class LocalBookService {
       pageCount: 253,
       language: 'en',
       hasGutenbergContent: true,
-      assetPath: 'assets/books/psychology_of_money.txt',
+      assetPath: 'assets/books/psychology_of_money.pdf',
     ),
   ];
 
@@ -343,8 +346,12 @@ class LocalBookService {
       'psychology_of_money',
     ],
     'romance': ['pride_and_prejudice', 'little_women'],
+    'comics': ['wizard_of_oz', 'alice_in_wonderland', 'the_time_machine', 'sherlock_holmes'],
+    'adventure': ['the_time_machine', 'wizard_of_oz', 'sherlock_holmes', 'dracula'],
     'mystery': ['sherlock_holmes', 'dracula', 'picture_of_dorian_gray'],
     'fantasy': ['alice_in_wonderland', 'wizard_of_oz'],
+    'sci-fi': ['the_time_machine', 'frankenstein'],
+    'classics': ['pride_and_prejudice', 'dracula', 'tale_of_two_cities', 'picture_of_dorian_gray', 'little_women', 'sherlock_holmes'],
     'science': ['the_time_machine', 'frankenstein', 'psychology_of_money'],
     'philosophy': ['psychology_of_money', 'picture_of_dorian_gray', 'frankenstein'],
     'history': ['tale_of_two_cities', 'pride_and_prejudice'],
@@ -406,19 +413,39 @@ class LocalBookService {
     return matches.skip(startIndex).take(maxResults).toList();
   }
 
-  /// Finds a book by its ID
+  /// Finds a book by its ID, with fallback for normalized IDs or title/path matches
   Book? getBookById(String id) {
     try {
       return _catalogue.firstWhere((b) => b.id == id);
     } catch (_) {
-      return null;
+      try {
+        final norm = id.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+        return _catalogue.firstWhere((b) {
+          final bNorm = b.id.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+          return bNorm == norm ||
+              (b.assetPath != null && b.assetPath!.contains(id)) ||
+              b.title.toLowerCase() == id.toLowerCase();
+        });
+      } catch (_) {
+        return null;
+      }
     }
   }
 
   /// In-memory cache for loaded asset text
   static final Map<String, String> _textCache = {};
 
-  /// Loads the full readable text of a book from local assets
+  /// Loads raw byte data of a book from local assets
+  Future<Uint8List> loadBookBytes(Book book) async {
+    final path = book.assetPath ?? book.contentAssetPath ?? getBookById(book.id)?.assetPath;
+    if (path != null && path.isNotEmpty) {
+      final ByteData data = await rootBundle.load(path);
+      return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    }
+    throw Exception('Content for "${book.title}" could not be loaded from local assets (path: $path).');
+  }
+
+  /// Loads the readable text or representation of a book from local assets
   Future<String> loadBookContent(Book book) async {
     // 1. In-memory cache
     if (_textCache.containsKey(book.id)) {
@@ -432,19 +459,41 @@ class LocalBookService {
     }
 
     // 3. Local asset file
-    final path = book.assetPath;
+    final path = book.assetPath ?? book.contentAssetPath ?? getBookById(book.id)?.assetPath;
     if (path != null && path.isNotEmpty) {
-      try {
-        final content = await rootBundle.loadString(path);
-        if (content.trim().isNotEmpty) {
+      if (path.toLowerCase().endsWith('.txt')) {
+        try {
+          final ByteData data = await rootBundle.load(path);
+          final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+          final content = utf8.decode(bytes, allowMalformed: true);
+          if (content.trim().isNotEmpty) {
+            _textCache[book.id] = content;
+            return content;
+          }
+        } catch (e) {
+          debugPrint('[LocalBookService] ByteData load error for $path ($e), trying loadString');
+          try {
+            final content = await rootBundle.loadString(path, cache: false);
+            if (content.trim().isNotEmpty) {
+              _textCache[book.id] = content;
+              return content;
+            }
+          } catch (e2) {
+            debugPrint('[LocalBookService] loadString also failed for $path: $e2');
+            rethrow;
+          }
+        }
+      } else {
+        // PDF binary file
+        final ByteData data = await rootBundle.load(path);
+        if (data.lengthInBytes > 0) {
+          final content = '[PDF Document: ${book.title}]';
           _textCache[book.id] = content;
           return content;
         }
-      } catch (e) {
-        debugPrint('[LocalBookService] Error loading asset $path: $e');
       }
     }
 
-    throw Exception('Content for "${book.title}" could not be loaded from local assets.');
+    throw Exception('Content for "${book.title}" could not be loaded from local assets (path: $path).');
   }
 }

@@ -30,16 +30,28 @@ class _MainScreenState extends State<MainScreen> {
       ProfilePage(onNavigateTab: _onNavigateTab),
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: IndexedStack(
         index: selectedIndex,
         children: pages,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: _onNavigateTab,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        indicatorColor: Theme.of(context).colorScheme.secondaryContainer,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF262C3D) : const Color(0xFFE2E8F0),
+              width: 1,
+            ),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: _onNavigateTab,
+          backgroundColor: isDark ? const Color(0xFF12141F) : Colors.white,
+          indicatorColor: isDark ? const Color(0xFF31265B) : const Color(0xFFEDE7F6),
+          surfaceTintColor: Colors.transparent,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -62,6 +74,7 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Profile',
           ),
         ],
+        ),
       ),
     );
   }
